@@ -9,11 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anatine/zod-openapi": "^1.10.0",
+    "@opentelemetry/api": "^1.2.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.33.1",
+    "@opentelemetry/sdk-node": "^0.33.0",
     "next": "12.3.1",
+    "openapi3-ts": "^3.1.1",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "zod": "^3.19.1"
   },
   "devDependencies": {
+    "@rushstack/eslint-plugin-packlets": "^0.6.1",
     "@types/node": "18.11.3",
     "@types/react": "18.0.21",
     "@types/react-dom": "18.0.6",
