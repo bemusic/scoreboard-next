@@ -3,8 +3,9 @@ import { createEndpoint } from '@/packlets/next-endpoint'
 
 export default createEndpoint({
   input: z.object({
-    name: z.string(),
+    username: z.string(),
+    password: z.string(),
   })
 }).handler(async ({ input }) => {
-  return { message: `Hello ${input.name}!` }
+  return { message: `Hello ${input.username}!` }
 })
