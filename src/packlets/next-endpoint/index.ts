@@ -1,36 +1,88 @@
-import { NextApiHandler, NextApiRequest, NextApiResponse } from "next";
-import { z, ZodType } from "zod";
+import { NextApiHandler, NextApiRequest, NextApiResponse } from 'next'
+import { z, ZodType } from 'zod'
+import { Span, SpanStatusCode, trace, Tracer } from '@opentelemetry/api'
+import { miniTracer } from '../tracing'
 
-export function createEndpoint<T extends ZodType>(options: EndpointOptions<T>): Endpoint<T> {
+const tracer = trace.getTracer('next-endpoint')
+
+function traceAsync<R>(
+  tracer: Tracer,
+  name: string,
+  f: (span: Span) => PromiseLike<R>,
+): Promise<R> {
+  return tracer.startActiveSpan(name, async (span) => {
+    try {
+      const result = await f(span)
+      span.setStatus({ code: SpanStatusCode.OK })
+      return result
+    } catch (err) {
+      span.setStatus({ code: SpanStatusCode.ERROR })
+      span.recordException(err as any)
+      throw err
+    } finally {
+      span.end()
+    }
+  })
+}
+
+export function createEndpoint<T extends ZodType>(
+  options: EndpointOptions<T>,
+): Endpoint<T> {
   return {
-    handler: f => {
+    handler: (f) => {
+      const diag: Record<string, any> = {}
       const handler: NextApiHandler = async (req, res) => {
         try {
-          const result = await f({ input: options.input.parse(req.body), req, res });
+          const result = await traceAsync(
+            tracer,
+            'Execute endpoint',
+            async (span) => {
+              const listener = miniTracer.createSpanListener(span)
+              try {
+                return await f({
+                  input: options.input?.parse(req.body),
+                  req,
+                  res,
+                })
+              } finally {
+                if (req.query.trace === '1') {
+                  diag._trace = listener.toJSON()
+                }
+                setTimeout(() => {
+                  console.log(
+                    listener.toString({
+                      title: req.method + ' ' + req.url,
+                    }),
+                  )
+                  listener.dispose()
+                }, 100)
+              }
+            },
+          )
           if (result) {
-            res.json(result);
+            res.json({ ...result, ...diag, ...result })
           }
         } catch (error) {
-          res.status(500).json({ message: String(error) });
+          res.status(500).json({ ...diag, message: String(error) })
         }
-      };
-      return handler;
-    }
+      }
+      return handler
+    },
   }
 }
 
 interface EndpointOptions<T extends ZodType> {
-  input: T;
+  input?: T
 }
 
 interface Endpoint<T extends ZodType> {
-  handler: (handler: EndpointHandler<z.infer<T>>) => NextApiHandler;
+  handler: (handler: EndpointHandler<z.infer<T>>) => NextApiHandler
 }
 
 type EndpointHandler<T> = (params: EndpointHandlerParams<T>) => Promise<any>
 
 interface EndpointHandlerParams<T> {
   input: T
-  req: NextApiRequest;
-  res: NextApiResponse;
+  req: NextApiRequest
+  res: NextApiResponse
 }
