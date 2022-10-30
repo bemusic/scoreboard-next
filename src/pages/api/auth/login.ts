@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto'
 import { decodeJwt, SignJWT } from 'jose'
 import { PlayerCollection, PlayerDoc } from '@/db'
 import { createLogger } from '@/packlets/logger'
+import { handleAxiosError, isAxiosError } from '@/packlets/handle-axios-error'
 
 const Username = z.union([
   z
@@ -29,7 +30,11 @@ export default createEndpoint({
   const { username, password } = input
   const player = await authenticatePlayer(username, password)
   const playerToken = await generatePlayerToken(player)
-  return { playerToken }
+  return {
+    playerToken,
+    playerName: player.playerName,
+    playerId: player._id,
+  }
 })
 
 async function authenticatePlayer(username: string, password: string) {
@@ -58,17 +63,25 @@ async function authenticatePlayer(username: string, password: string) {
   // so instead of storing the username in Auth0, we store arbitrarily generated
   // UUIDs in the username field.
   const auth0Username = await resolveAuth0Username(username)
-  const { data } = await axios.post(
-    'https://bemuse.au.auth0.com/oauth/token',
-    new URLSearchParams({
-      grant_type: 'http://auth0.com/oauth/grant-type/password-realm',
-      realm: 'Username-Password-Authentication',
-      username: auth0Username,
-      password,
-      client_id: 'XOS0iHs3cwHICkVHwPEJYVHuyyLrETN4',
-      scope: 'openid',
-    }).toString(),
-  )
+  const { data } = await axios
+    .post(
+      'https://bemuse.au.auth0.com/oauth/token',
+      new URLSearchParams({
+        grant_type: 'http://auth0.com/oauth/grant-type/password-realm',
+        realm: 'Username-Password-Authentication',
+        username: auth0Username,
+        password,
+        client_id: 'XOS0iHs3cwHICkVHwPEJYVHuyyLrETN4',
+        scope: 'openid',
+      }).toString(),
+    )
+    .catch((e) => {
+      if (!isAxiosError(e, 403)) {
+        throw e
+      }
+      throw new createHttpError.Unauthorized('Invalid credentials')
+    })
+    .catch(handleAxiosError('Unable to authenticate player'))
 
   // Since the ID token is directly returned by Auth0 (as supposed to being
   // sent to the client and then sent back to the server), we can trust it.
