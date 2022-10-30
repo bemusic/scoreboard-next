@@ -2,8 +2,10 @@ import { NextApiHandler, NextApiRequest, NextApiResponse } from 'next'
 import { z, ZodType } from 'zod'
 import { Span, SpanStatusCode, trace, Tracer } from '@opentelemetry/api'
 import { miniTracer } from '../tracing'
+import { createLogger } from '../logger'
 
 const tracer = trace.getTracer('next-endpoint')
+const logger = createLogger('next-endpoint')
 
 function traceAsync<R>(
   tracer: Tracer,
@@ -63,6 +65,10 @@ export function createEndpoint<T extends ZodType>(
             res.json({ ...result, ...diag, ...result })
           }
         } catch (error) {
+          if ((error as any).response) {
+            console.log('Error response', (error as any).response.data)
+          }
+          logger.error({ err: error, req, res }, String(error))
           res.status(500).json({ ...diag, message: String(error) })
         }
       }

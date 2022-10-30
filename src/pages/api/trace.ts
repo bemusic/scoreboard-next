@@ -1,7 +1,5 @@
 import { createEndpoint } from '@/packlets/next-endpoint'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/packlets/prisma-client'
 
 export default createEndpoint({}).handler(async ({ input }) => {
   const count = await prisma.rankingEntry.count()
