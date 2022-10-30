@@ -6,11 +6,7 @@ import {
 } from '@/db'
 import { uniq } from 'lodash-es'
 
-export async function getLeaderboard(
-  md5: string,
-  playMode: string,
-  max: number,
-) {
+export async function getLeaderboard(md5: string, playMode: string, max = 50) {
   max = Math.max(1, Math.min(50, max || 50))
 
   const entries = await RankingEntryCollection.find({ md5, playMode })
@@ -24,20 +20,20 @@ export async function getLeaderboard(
   const playerMap = new Map(players.map((player) => [player._id, player]))
 
   return {
-    data: entries.map((entry, index) => {
-      return {
-        rank: index + 1,
-        entry: serializeRankingEntry(entry, playerMap),
-      }
+    data: entries.flatMap((entry, index) => {
+      const player = playerMap.get(entry.playerId)
+      if (!player) return []
+      return [
+        {
+          rank: index + 1,
+          entry: serializeRankingEntry(entry, player),
+        },
+      ]
     }),
   }
 }
 
-function serializeRankingEntry(
-  entry: RankingEntryDoc,
-  playerMap: Map<string, PlayerDoc>,
-) {
-  const player = playerMap.get(entry.playerId)
+function serializeRankingEntry(entry: RankingEntryDoc, player: PlayerDoc) {
   return {
     id: String(entry._id),
     score: entry.data.score,
@@ -47,7 +43,7 @@ function serializeRankingEntry(
     recordedAt: entry.data.recordedAt.toJSON(),
     playNumber: entry.data.playNumber,
     playCount: entry.data.playCount,
-    player: player && serializePlayer(player),
+    player: serializePlayer(player),
   }
 }
 
