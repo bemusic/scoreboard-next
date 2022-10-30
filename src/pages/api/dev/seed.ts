@@ -24,11 +24,13 @@ export default createEndpoint({}).handler(async ({ input }) => {
     }
   }
 
+  // This player exists on the production instance of Auth0.
   await seedPlayer(
     '19b01549-317d-465f-8f34-277357054b90',
     'BemuseTester1',
     'auth0|6356ee23284d38dfe27d3e7d',
   )
+
   logger.info({ log: log.join('\n') }, 'Seed data created.')
 
   return { result: log }
