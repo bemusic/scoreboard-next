@@ -36,11 +36,6 @@ model Player {
   @@index([linkedTo], map: "linkedTo_1")
 }
 
-model FirebasePlayerLink {
-  firebaseUid String @id @map("_id")
-  playerId    String @unique(map: "playerId_1")
-}
-
 model RankingEntry {
   id        String           @id @default(auto()) @map("_id") @db.ObjectId
   data      RankingEntryData
