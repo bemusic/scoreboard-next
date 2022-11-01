@@ -6,6 +6,12 @@ import {
 } from '@/db'
 import { uniq } from 'lodash-es'
 
+/**
+ * Get a leaderboard for a chart.
+ * @param md5 Chart MD5 hash.
+ * @param playMode Play mode, either 'BM' for BMS or 'KB' for keyboard.
+ * @param max Maximum number of entries to return.
+ */
 export async function getLeaderboard(md5: string, playMode: string, max = 50) {
   max = Math.max(1, Math.min(50, max || 50))
 

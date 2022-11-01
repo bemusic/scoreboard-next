@@ -8,6 +8,9 @@ import createHttpError from 'http-errors'
 const tracer = trace.getTracer('next-endpoint')
 const logger = createLogger('next-endpoint')
 
+/**
+ * Trace an async function
+ */
 function traceAsync<R>(
   tracer: Tracer,
   name: string,
@@ -28,6 +31,11 @@ function traceAsync<R>(
   })
 }
 
+/**
+ * Create an endpoint
+ *
+ * @param options The options
+ */
 export function createEndpoint<T extends ZodType>(
   options: EndpointOptions<T>,
 ): Endpoint<T> {
@@ -86,16 +94,34 @@ export function createEndpoint<T extends ZodType>(
   }
 }
 
+/**
+ * Endpoint options
+ */
 interface EndpointOptions<T extends ZodType> {
+  /**
+   * The input schema
+   */
   input?: T
 }
 
+/**
+ * Endpoint
+ */
 interface Endpoint<T extends ZodType> {
+  /**
+   * Create a handler
+   */
   handler: (handler: EndpointHandler<z.infer<T>>) => NextApiHandler
 }
 
+/**
+ * Endpoint handler
+ */
 type EndpointHandler<T> = (params: EndpointHandlerParams<T>) => Promise<any>
 
+/**
+ * Endpoint handler params
+ */
 interface EndpointHandlerParams<T> {
   input: T
   req: NextApiRequest

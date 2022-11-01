@@ -14,6 +14,11 @@ const rootLogger = pino(
     : pretty({ translateTime: 'SYS:standard' }),
 )
 
+/**
+ * Create a logger
+ *
+ * @param name - The name of the logger
+ */
 export function createLogger(name: string) {
   return rootLogger.child({ name })
 }
