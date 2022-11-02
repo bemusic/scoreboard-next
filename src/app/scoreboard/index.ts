@@ -39,6 +39,17 @@ export async function getLeaderboard(md5: string, playMode: string, max = 50) {
   }
 }
 
+/**
+ * Return my own record for a chart.
+ * @param md5 Chart MD5 hash.
+ * @param playMode Play mode, either 'BM' for BMS or 'KB' for keyboard.
+ */
+export async function getMyRecord(md5: string, playMode: string) {
+  return {
+    data: null,
+  }
+}
+
 function serializeRankingEntry(entry: RankingEntryDoc, player: PlayerDoc) {
   return {
     id: String(entry._id),

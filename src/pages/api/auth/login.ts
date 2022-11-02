@@ -3,10 +3,11 @@ import { createEndpoint } from '@/packlets/next-endpoint'
 import axios from 'axios'
 import createHttpError from 'http-errors'
 import { randomUUID } from 'crypto'
-import { decodeJwt, SignJWT } from 'jose'
-import { PlayerCollection, PlayerDoc } from '@/db'
+import { decodeJwt } from 'jose'
+import { PlayerCollection } from '@/db'
 import { createLogger } from '@/packlets/logger'
 import { handleAxiosError, isAxiosError } from '@/packlets/handle-axios-error'
+import { generatePlayerToken } from '@/app/player-token'
 
 const Username = z.union([
   z
@@ -117,12 +118,4 @@ async function resolveAuth0Username(username: string) {
 
   logger.info('Resolved player "%s" => "%s"', username, player._id)
   return player._id
-}
-
-async function generatePlayerToken(player: PlayerDoc) {
-  return await new SignJWT({ sub: player._id, playerName: player.playerName })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime('14d')
-    .sign(Buffer.from(process.env.PLAYER_TOKEN_SECRET!))
 }
