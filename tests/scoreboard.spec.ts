@@ -1,13 +1,12 @@
 import { test, expect, APIRequestContext } from '@playwright/test'
 import { randomUUID } from 'crypto'
 import { ApiTester, env } from './helpers'
+import { TestScoreboard } from './helpers/TestScoreboard'
 
 test('load leaderboard', async ({ request }) => {
-  const response = await request.get(
-    '/api/scoreboard/5ff51316cc7a63504fdd74a2e8007538/BM/leaderboard',
-  )
-  expect(response.status()).toBe(200)
-  const { data } = await response.json()
+  const scoreboard = TestScoreboard.random()
+  const tester = new ApiTester(request)
+  const { data } = await scoreboard.getLeaderboard(tester)
   expect(data).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
@@ -23,27 +22,17 @@ test('load leaderboard', async ({ request }) => {
 })
 
 test('my record without score', async ({ request }) => {
-  const tester = new ApiTester(request)
-  await tester.login()
-
-  const response = await tester.get(
-    '/api/scoreboard/5ff51316cc7a63504fdd74a2e8007538/TS/mine',
-  )
-  expect(response.status()).toBe(200)
-  const { data } = await response.json()
+  const scoreboard = TestScoreboard.random()
+  const tester = await ApiTester.login(request)
+  const { data } = await scoreboard.getMyRecord(tester)
   expect(data).toBe(null)
 })
 
 test('my record with score', async ({ request }) => {
-  const tester = new ApiTester(request)
-  await tester.login()
-  await tester.submitScore()
-
-  const response = await tester.get(
-    '/api/scoreboard/5ff51316cc7a63504fdd74a2e8007538/TS/mine',
-  )
-  expect(response.status()).toBe(200)
-  const { data } = await response.json()
+  const scoreboard = TestScoreboard.random()
+  const tester = await ApiTester.login(request)
+  await scoreboard.submitScore(tester, 123456)
+  const { data } = await scoreboard.getMyRecord(tester)
   expect(data).toEqual(
     expect.objectContaining({
       rank: 1,
@@ -55,3 +44,8 @@ test('my record with score', async ({ request }) => {
     }),
   )
 })
+
+// test('updates ranking entry score if record is better')
+// test('does not update ranking entry score if record is not better')
+// test('updates play count even if record is not better')
+// test('records the date and time of the score')
