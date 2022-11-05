@@ -1,6 +1,6 @@
 import { test, expect, APIRequestContext } from '@playwright/test'
 import { randomUUID } from 'crypto'
-import { env } from './lib/env'
+import { env } from './helpers'
 
 test('login as test user', async ({ request }) => {
   const TEST_USER_PASSWORD = env('TEST_USER_PASSWORD')

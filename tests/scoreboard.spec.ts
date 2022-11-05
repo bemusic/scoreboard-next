@@ -1,7 +1,6 @@
 import { test, expect, APIRequestContext } from '@playwright/test'
 import { randomUUID } from 'crypto'
-import { ApiTester } from './lib/ApiTester'
-import { env } from './lib/env'
+import { ApiTester, env } from './helpers'
 
 test('load leaderboard', async ({ request }) => {
   const response = await request.get(
@@ -45,5 +44,14 @@ test('my record with score', async ({ request }) => {
   )
   expect(response.status()).toBe(200)
   const { data } = await response.json()
-  expect(data).toBe(null)
+  expect(data).toEqual(
+    expect.objectContaining({
+      rank: 1,
+      entry: expect.objectContaining({
+        player: expect.objectContaining({
+          name: 'test!1',
+        }),
+      }),
+    }),
+  )
 })
