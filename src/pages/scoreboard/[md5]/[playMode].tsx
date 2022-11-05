@@ -1,11 +1,11 @@
 import {
-  GetServerSideProps,
   GetServerSidePropsContext,
   InferGetServerSidePropsType,
   NextPage,
 } from 'next'
 import { getLeaderboard } from '@/app/scoreboard'
 import { calculateAccuracy, formatAccuracy } from '@/packlets/bemuse-scoreboard'
+import { FC, useEffect, useMemo } from 'react'
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
@@ -36,18 +36,21 @@ const ScoreboardPage: NextPage<
           <table className="table table-compact w-full">
             <thead>
               <tr>
-                <th>Rank</th>
-                <th>Name</th>
+                <th className="text-right">Rank</th>
+                <th className="text-center">Name</th>
                 <th className="text-right">Accuracy</th>
                 <th className="text-right">Combo</th>
                 <th className="text-right">Score</th>
+                <th className="text-center">Recorded</th>
               </tr>
             </thead>
             <tbody>
               {data.map((row, index) => (
                 <tr key={index}>
-                  <td>{row.rank}</td>
-                  <td>{row.entry.player.name}</td>
+                  <td className="text-right">{row.rank}</td>
+                  <td className="text-center">
+                    <strong>{row.entry.player.name}</strong>
+                  </td>
                   <td className="text-right">
                     {row.entry.combo}
                     <small className="opacity-75">/{row.entry.total}</small>
@@ -58,6 +61,9 @@ const ScoreboardPage: NextPage<
                     )}
                   </td>
                   <td className="text-right">{row.entry.score}</td>
+                  <td className="text-center">
+                    <RelativeTime time={row.entry.recordedAt} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -66,6 +72,29 @@ const ScoreboardPage: NextPage<
       </div>
     </div>
   )
+}
+
+export interface RelativeTime {
+  time: string
+}
+
+export const RelativeTime: FC<RelativeTime> = (props) => {
+  useEffect(() => {
+    import('@github/time-elements')
+  }, [])
+  return (
+    <relative-time datetime={props.time} tense="past">
+      {props.time}
+    </relative-time>
+  )
+}
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'relative-time': any
+    }
+  }
 }
 
 export default ScoreboardPage

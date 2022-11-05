@@ -2,6 +2,7 @@ lockfileVersion: 5.4
 
 specifiers:
   '@anatine/zod-openapi': ^1.10.0
+  '@github/time-elements': ^3.2.0
   '@opentelemetry/api': ^1.2.0
   '@opentelemetry/auto-instrumentations-node': ^0.33.1
   '@opentelemetry/exporter-trace-otlp-http': ^0.33.0
@@ -40,6 +41,7 @@ specifiers:
 
 dependencies:
   '@anatine/zod-openapi': 1.10.0_l2ar5pfqoldf3crtoigil7jw4y
+  '@github/time-elements': 3.2.0
   '@opentelemetry/api': 1.2.0
   '@opentelemetry/auto-instrumentations-node': 0.33.1_@opentelemetry+api@1.2.0
   '@opentelemetry/exporter-trace-otlp-http': 0.33.0_@opentelemetry+api@1.2.0
@@ -897,6 +899,10 @@ packages:
     resolution: {integrity: sha512-cTKBV2J9+u6VaKDhX7HepSfPSzw+F+TSd+k0wzifj4rG+4E5PjSFJCk19P8R6tr/72cuzgGd+mbB3jFT6lvAgw==}
     dependencies:
       fast-json-stringify: 5.4.0
+    dev: false
+
+  /@github/time-elements/3.2.0:
+    resolution: {integrity: sha512-YWhC5AqHhme1RYFcQCA5hrTfz0MsVk1z55YXKU7dCk2S8PVwSCEeRBiygtT38975wpzqK55uAfF9NnSgfaX97A==}
     dev: false
 
   /@hapi/b64/5.0.0:
