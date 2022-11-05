@@ -6,7 +6,7 @@ export class TestUser {
     public readonly password: string,
   ) {}
 
-  static testUser() {
-    return new TestUser('test!1', env('TEST_USER_PASSWORD'))
+  static testUser(number = 1) {
+    return new TestUser('test!' + number, env('TEST_USER_PASSWORD'))
   }
 }

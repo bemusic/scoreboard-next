@@ -25,6 +25,10 @@ export class ApiTester {
     return new ApiTester(request, playerToken)
   }
 
+  static guest(request: APIRequestContext) {
+    return new ApiTester(request)
+  }
+
   async get(path: string) {
     const headers = this.playerToken
       ? { Authorization: `Bearer ${this.playerToken}` }

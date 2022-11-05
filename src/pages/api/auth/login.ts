@@ -48,7 +48,7 @@ async function authenticatePlayer(username: string, password: string) {
       { playerName: username },
       {
         $setOnInsert: {
-          id: randomUUID(),
+          _id: randomUUID(),
           playerName: username,
         },
       },

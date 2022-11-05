@@ -11,28 +11,28 @@ export class TestScoreboard {
   }
 
   async getLeaderboard(tester: ApiTester) {
-    const response = await tester.get(
+    return tester.get(
       `/api/scoreboard/${this.md5}/${this.playMode}/leaderboard`,
     )
-    expect(response.status()).toBe(200)
-    return response.json()
   }
 
   async getMyRecord(tester: ApiTester) {
-    const response = await tester.get(
-      `/api/scoreboard/${this.md5}/${this.playMode}/mine`,
-    )
-    expect(response.status()).toBe(200)
-    return response.json()
+    return tester.get(`/api/scoreboard/${this.md5}/${this.playMode}/mine`)
   }
 
   async submitScore(tester: ApiTester, score: number) {
     const data = {
-      score: 123456,
-      total: 1000,
-      count: [5, 4, 3, 2, 1],
-      combo: 5,
-      log: '',
+      scoreData: {
+        score: 123456,
+        total: 1000,
+        count: [5, 4, 3, 2, 1],
+        combo: 5,
+        log: '',
+      },
     }
+    return tester.post(
+      `/api/scoreboard/${this.md5}/${this.playMode}/submit`,
+      data,
+    )
   }
 }

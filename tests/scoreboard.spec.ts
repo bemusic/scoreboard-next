@@ -1,12 +1,20 @@
-import { test, expect, APIRequestContext } from '@playwright/test'
-import { randomUUID } from 'crypto'
-import { ApiTester, env } from './helpers'
+import { test, expect } from '@playwright/test'
+import { ApiTester, itMustSucceed } from './helpers'
 import { TestScoreboard } from './helpers/TestScoreboard'
+import { TestUser } from './helpers/TestUser'
 
 test('load leaderboard', async ({ request }) => {
   const scoreboard = TestScoreboard.random()
   const tester = new ApiTester(request)
-  const { data } = await scoreboard.getLeaderboard(tester)
+  await scoreboard
+    .submitScore(await ApiTester.login(request, TestUser.testUser(1)), 123456)
+    .then(itMustSucceed())
+  await scoreboard
+    .submitScore(await ApiTester.login(request, TestUser.testUser(2)), 234567)
+    .then(itMustSucceed())
+  const response = await scoreboard.getLeaderboard(tester)
+  expect(response.status()).toBe(200)
+  const { data } = await response.json()
   expect(data).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
@@ -21,18 +29,29 @@ test('load leaderboard', async ({ request }) => {
   )
 })
 
+test('getting my own record requires a valid token', async ({ request }) => {
+  const scoreboard = TestScoreboard.random()
+  const tester = ApiTester.guest(request)
+  const response = await scoreboard.getMyRecord(tester)
+  expect(response.status()).toBe(401)
+})
+
 test('my record without score', async ({ request }) => {
   const scoreboard = TestScoreboard.random()
   const tester = await ApiTester.login(request)
-  const { data } = await scoreboard.getMyRecord(tester)
+  const response = await scoreboard.getMyRecord(tester)
+  expect(response.status()).toBe(200)
+  const { data } = await response.json()
   expect(data).toBe(null)
 })
 
 test('my record with score', async ({ request }) => {
   const scoreboard = TestScoreboard.random()
   const tester = await ApiTester.login(request)
-  await scoreboard.submitScore(tester, 123456)
-  const { data } = await scoreboard.getMyRecord(tester)
+  await scoreboard.submitScore(tester, 123456).then(itMustSucceed())
+  const response = await scoreboard.getMyRecord(tester)
+  expect(response.status()).toBe(200)
+  const { data } = await response.json()
   expect(data).toEqual(
     expect.objectContaining({
       rank: 1,
