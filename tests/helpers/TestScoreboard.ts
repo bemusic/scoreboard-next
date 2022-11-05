@@ -23,7 +23,7 @@ export class TestScoreboard {
   async submitScore(tester: ApiTester, score: number) {
     const data = {
       scoreData: {
-        score: 123456,
+        score: score,
         total: 1000,
         count: [5, 4, 3, 2, 1],
         combo: 5,

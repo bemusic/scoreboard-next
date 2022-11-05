@@ -58,7 +58,41 @@ test('my record with score', async ({ request }) => {
   )
 })
 
-// test('updates ranking entry score if record is better')
-// test('does not update ranking entry score if record is not better')
-// test('updates play count even if record is not better')
-// test('records the date and time of the score')
+test('updates ranking entry score if record is better', async ({ request }) => {
+  const scoreboard = TestScoreboard.random()
+  const tester = await ApiTester.login(request)
+  await scoreboard.submitScore(tester, 222222).then(itMustSucceed())
+  await scoreboard.submitScore(tester, 333333).then(itMustSucceed())
+  const { data } = await scoreboard.getMyRecord(tester).then(itMustSucceed())
+  expect(data.entry.score).toBe(333333)
+})
+
+test('does not update ranking entry score if record is not better', async ({
+  request,
+}) => {
+  const scoreboard = TestScoreboard.random()
+  const tester = await ApiTester.login(request)
+  await scoreboard.submitScore(tester, 222222).then(itMustSucceed())
+  await scoreboard.submitScore(tester, 123456).then(itMustSucceed())
+  const { data } = await scoreboard.getMyRecord(tester).then(itMustSucceed())
+  expect(data.entry.score).toBe(222222)
+})
+
+test('updates play count even if record is not better', async ({ request }) => {
+  const scoreboard = TestScoreboard.random()
+  const tester = await ApiTester.login(request)
+  await scoreboard.submitScore(tester, 222222).then(itMustSucceed())
+  await scoreboard.submitScore(tester, 123456).then(itMustSucceed())
+  const { data } = await scoreboard.getMyRecord(tester).then(itMustSucceed())
+  expect(data.entry.playCount).toBe(2)
+})
+
+test('records the date and time of the score', async ({ request }) => {
+  const scoreboard = TestScoreboard.random()
+  const tester = await ApiTester.login(request)
+  await scoreboard.submitScore(tester, 131072).then(itMustSucceed())
+  const { data } = await scoreboard.getMyRecord(tester).then(itMustSucceed())
+  expect(data.entry.recordedAt).toMatch(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*Z$/,
+  )
+})
