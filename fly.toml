@@ -5,10 +5,6 @@ kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
 
-[build]
-  [build.args]
-    NEXT_PUBLIC_EXAMPLE = "Value goes here"
-
 [env]
   PORT = "8080"
 
@@ -23,9 +19,9 @@ processes = []
   protocol = "tcp"
   script_checks = []
   [services.concurrency]
-    hard_limit = 25
-    soft_limit = 20
-    type = "connections"
+    hard_limit = 250
+    soft_limit = 200
+    type = "requests"
 
   [[services.ports]]
     force_https = true
