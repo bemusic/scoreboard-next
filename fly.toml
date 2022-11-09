@@ -1,4 +1,4 @@
-# fly.toml file generated for bemuse-online-ranking on 2022-11-09T19:28:26Z
+# fly.toml file generated for bemuse-online-ranking on 2022-11-09T19:59:21Z
 
 app = "bemuse-online-ranking"
 kill_signal = "SIGINT"
