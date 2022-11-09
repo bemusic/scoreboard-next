@@ -26,6 +26,7 @@ jobs:
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+      - run: pnpm install
       - run: pnpm run build
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --local-only
