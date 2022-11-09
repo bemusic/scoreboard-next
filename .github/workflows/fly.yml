@@ -29,4 +29,4 @@ jobs:
       - run: pnpm install
       - run: pnpm run build
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --local-only
+      - run: flyctl deploy --remote-only
