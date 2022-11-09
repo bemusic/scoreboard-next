@@ -3,13 +3,13 @@ import {
   InferGetServerSidePropsType,
   NextPage,
 } from 'next'
-import { getLeaderboard } from '@/app/scoreboard'
 import { calculateAccuracy, formatAccuracy } from '@/packlets/bemuse-scoreboard'
-import { FC, useEffect, useMemo } from 'react'
+import { FC, useEffect } from 'react'
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
+  const { getLeaderboard } = await import('@/app/scoreboard')
   const md5 = String(context.query.md5)
   const playMode = String(context.query.playMode)
   const leaderboard = await getLeaderboard(md5, playMode)
