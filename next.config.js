@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  serverRuntimeConfig: process.env,
   experimental: {
     appDir: false,
   },

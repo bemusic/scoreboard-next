@@ -1,4 +1,3 @@
-import { expect } from '@playwright/test'
 import { createHash, randomUUID } from 'crypto'
 import { ApiTester } from './ApiTester'
 

@@ -1,5 +1,4 @@
 import { APIRequestContext, expect } from '@playwright/test'
-import { env } from './env'
 import { TestUser } from './TestUser'
 
 /**
