@@ -74,6 +74,18 @@ test('my record for multiple songs', async ({ request }) => {
     })
     .then(itMustSucceed())
   expect(data).toHaveLength(2)
+  expect(data).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        md5: scoreboardA.md5,
+        entry: expect.objectContaining({ score: 123456 }),
+      }),
+      expect.objectContaining({
+        md5: scoreboardB.md5,
+        entry: expect.objectContaining({ score: 345345 }),
+      }),
+    ]),
+  )
 })
 
 test('updates ranking entry score if record is better', async ({ request }) => {
