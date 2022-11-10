@@ -66,7 +66,14 @@ test('my record for multiple songs', async ({ request }) => {
   const scoreboardB = TestScoreboard.random()
   await scoreboardB.submitScore(tester, 345345).then(itMustSucceed())
   await scoreboardB.submitScore(anotherUser, 234543).then(itMustSucceed())
-  test.skip(true, 'TODO: implement')
+  const scoreboardC = TestScoreboard.random()
+  await scoreboardC.submitScore(tester, 444444).then(itMustSucceed())
+  const { data } = await tester
+    .post('/api/scoreboard/records', {
+      md5s: [scoreboardA.md5, scoreboardB.md5],
+    })
+    .then(itMustSucceed())
+  expect(data).toHaveLength(2)
 })
 
 test('updates ranking entry score if record is better', async ({ request }) => {
