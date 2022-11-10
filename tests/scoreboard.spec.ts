@@ -58,6 +58,17 @@ test('my record with score', async ({ request }) => {
   )
 })
 
+test('my record for multiple songs', async ({ request }) => {
+  const tester = await ApiTester.login(request)
+  const anotherUser = await ApiTester.login(request, TestUser.testUser(2))
+  const scoreboardA = TestScoreboard.random()
+  await scoreboardA.submitScore(tester, 123456).then(itMustSucceed())
+  const scoreboardB = TestScoreboard.random()
+  await scoreboardB.submitScore(tester, 345345).then(itMustSucceed())
+  await scoreboardB.submitScore(anotherUser, 234543).then(itMustSucceed())
+  test.skip(true, 'TODO: implement')
+})
+
 test('updates ranking entry score if record is better', async ({ request }) => {
   const scoreboard = TestScoreboard.random()
   const tester = await ApiTester.login(request)
