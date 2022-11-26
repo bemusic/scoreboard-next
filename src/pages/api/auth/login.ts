@@ -1,18 +1,7 @@
-import { z } from 'zod'
 import { createEndpoint } from '@/packlets/next-endpoint'
 import { generatePlayerToken } from '@/app/player-token'
-import { authenticatePlayer } from '@/app/auth'
-
-const Username = z.union([
-  z
-    .string()
-    .min(1)
-    .max(32)
-    .regex(/^(?:test!)?[a-zA-Z0-9_]+$/),
-  z.string().email(),
-])
-
-const Password = z.string().min(6)
+import { authenticatePlayer, Password, Username } from '@/app/auth'
+import { z } from 'zod'
 
 export default createEndpoint({
   input: z.object({

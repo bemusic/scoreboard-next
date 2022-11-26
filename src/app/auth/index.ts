@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import axios from 'axios'
 import createHttpError from 'http-errors'
 import { randomUUID } from 'crypto'
@@ -7,6 +8,17 @@ import { handleAxiosError, isAxiosError } from '@/packlets/handle-axios-error'
 import { createLogger } from '@/packlets/logger'
 
 const logger = createLogger('auth')
+
+export const Username = z.union([
+  z
+    .string()
+    .min(1)
+    .max(32)
+    .regex(/^(?:test!)?[a-zA-Z0-9_]+$/),
+  z.string().email(),
+])
+
+export const Password = z.string().min(6)
 
 export async function authenticatePlayer(username: string, password: string) {
   // For test accounts, use a hardcoded password.
