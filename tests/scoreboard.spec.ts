@@ -58,6 +58,36 @@ test('my record with score', async ({ request }) => {
   )
 })
 
+test('my record for multiple songs', async ({ request }) => {
+  const tester = await ApiTester.login(request)
+  const anotherUser = await ApiTester.login(request, TestUser.testUser(2))
+  const scoreboardA = TestScoreboard.random()
+  await scoreboardA.submitScore(tester, 123456).then(itMustSucceed())
+  const scoreboardB = TestScoreboard.random()
+  await scoreboardB.submitScore(tester, 345345).then(itMustSucceed())
+  await scoreboardB.submitScore(anotherUser, 234543).then(itMustSucceed())
+  const scoreboardC = TestScoreboard.random()
+  await scoreboardC.submitScore(tester, 444444).then(itMustSucceed())
+  const { data } = await tester
+    .post('/api/scoreboard/records', {
+      md5s: [scoreboardA.md5, scoreboardB.md5],
+    })
+    .then(itMustSucceed())
+  expect(data).toHaveLength(2)
+  expect(data).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        md5: scoreboardA.md5,
+        entry: expect.objectContaining({ score: 123456 }),
+      }),
+      expect.objectContaining({
+        md5: scoreboardB.md5,
+        entry: expect.objectContaining({ score: 345345 }),
+      }),
+    ]),
+  )
+})
+
 test('updates ranking entry score if record is better', async ({ request }) => {
   const scoreboard = TestScoreboard.random()
   const tester = await ApiTester.login(request)

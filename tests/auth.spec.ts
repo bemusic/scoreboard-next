@@ -1,6 +1,6 @@
 import { test, expect, APIRequestContext } from '@playwright/test'
 import { randomUUID } from 'crypto'
-import { env } from './helpers'
+import { env, itMustSucceed } from './helpers'
 
 test('login as test user', async ({ request }) => {
   const TEST_USER_PASSWORD = env('TEST_USER_PASSWORD')
@@ -13,33 +13,87 @@ test('login as test user with wrong password', async ({ request }) => {
   expect(response.status()).toBe(401)
 })
 
-test('login as auth0 user', async ({ request }) => {
-  const AUTH0_TEST_USER_USERNAME = env('AUTH0_TEST_USER_USERNAME')
-  const AUTH0_TEST_USER_PASSWORD = env('AUTH0_TEST_USER_PASSWORD')
+test('login as existing user', async ({ request }) => {
+  const FIREBASE_TEST_USER_USERNAME = env('FIREBASE_TEST_USER_USERNAME')
+  const FIREBASE_TEST_USER_PASSWORD = env('FIREBASE_TEST_USER_PASSWORD')
   const result = await loginSuccessfully(
     request,
-    AUTH0_TEST_USER_USERNAME,
-    AUTH0_TEST_USER_PASSWORD,
+    FIREBASE_TEST_USER_USERNAME,
+    FIREBASE_TEST_USER_PASSWORD,
   )
-  expect(result.playerName).toBe(AUTH0_TEST_USER_USERNAME)
+  expect(result.playerName).toBe(FIREBASE_TEST_USER_USERNAME)
 })
 
-test('login as auth0 user with wrong password', async ({ request }) => {
-  const AUTH0_TEST_USER_USERNAME = env('AUTH0_TEST_USER_USERNAME')
-  const response = await login(request, AUTH0_TEST_USER_USERNAME, randomUUID())
+test('login as existing user with wrong password', async ({ request }) => {
+  const FIREBASE_TEST_USER_USERNAME = env('FIREBASE_TEST_USER_USERNAME')
+  const response = await login(
+    request,
+    FIREBASE_TEST_USER_USERNAME,
+    randomUUID(),
+  )
   expect(response.status()).toBe(401)
 })
 
-test('login as auth0 user with email', async ({ request }) => {
-  const AUTH0_TEST_USER_EMAIL = env('AUTH0_TEST_USER_EMAIL')
-  const AUTH0_TEST_USER_USERNAME = env('AUTH0_TEST_USER_USERNAME')
-  const AUTH0_TEST_USER_PASSWORD = env('AUTH0_TEST_USER_PASSWORD')
+test('login as existing user with email', async ({ request }) => {
+  const FIREBASE_TEST_USER_EMAIL = env('FIREBASE_TEST_USER_EMAIL')
+  const FIREBASE_TEST_USER_USERNAME = env('FIREBASE_TEST_USER_USERNAME')
+  const FIREBASE_TEST_USER_PASSWORD = env('FIREBASE_TEST_USER_PASSWORD')
   const result = await loginSuccessfully(
     request,
-    AUTH0_TEST_USER_EMAIL,
-    AUTH0_TEST_USER_PASSWORD,
+    FIREBASE_TEST_USER_EMAIL,
+    FIREBASE_TEST_USER_PASSWORD,
   )
-  expect(result.playerName).toBe(AUTH0_TEST_USER_USERNAME)
+  expect(result.playerName).toBe(FIREBASE_TEST_USER_USERNAME)
+})
+
+test('sign up', async ({ request }) => {
+  const TEST_USER_PASSWORD = env('TEST_USER_PASSWORD')
+  const result = await request
+    .post('/api/auth/signup', {
+      data: {
+        username: 'test!1',
+        password: TEST_USER_PASSWORD,
+        email: 'test1@tester.bemuse.ninja',
+      },
+    })
+    .then(itMustSucceed())
+  expect(result.playerName).toBe('test!1')
+  expect(result.playerToken).toEqual(expect.any(String))
+})
+
+test('reset password', async ({ request }) => {
+  const response = await request.post('/api/auth/reset', {
+    data: { email: 'tester@tester.bemuse.ninja' },
+  })
+  expect(response.status()).toBe(200)
+})
+
+test('reset password with invalid email', async ({ request }) => {
+  const response = await request.post('/api/auth/reset', {
+    data: { email: 'bogus' },
+  })
+  expect(response.status()).toBe(400)
+})
+
+test('renewing token', async ({ request }) => {
+  const TEST_USER_PASSWORD = env('TEST_USER_PASSWORD')
+  const result = await loginSuccessfully(request, 'test!1', TEST_USER_PASSWORD)
+  const token1 = result.playerToken
+  const response = await request.post('/api/auth/renew', {
+    headers: { Authorization: `Bearer ${token1}` },
+  })
+  expect(response.status()).toBe(200)
+  const result2 = await response.json()
+  const token2 = result2.playerToken
+  expect(token2).toEqual(expect.any(String))
+  expect(token1).not.toBe(token2)
+})
+
+test('renewing token with invalid token', async ({ request }) => {
+  const response = await request.post('/api/auth/renew', {
+    headers: { Authorization: `Bearer BOGUS` },
+  })
+  expect(response.status()).toBe(401)
 })
 
 async function loginSuccessfully(

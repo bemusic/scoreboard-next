@@ -4,9 +4,12 @@ import { Span, SpanStatusCode, trace, Tracer } from '@opentelemetry/api'
 import { miniTracer } from '../tracing'
 import { createLogger } from '../logger'
 import createHttpError from 'http-errors'
+import Cors from 'cors'
+import { initMiddleware } from 'init-middleware'
 
 const tracer = trace.getTracer('next-endpoint')
 const logger = createLogger('next-endpoint')
+const cors = initMiddleware(Cors())
 
 /**
  * Trace an async function
@@ -43,6 +46,7 @@ export function createEndpoint<T extends ZodType>(
     handler: (f) => {
       const diag: Record<string, any> = {}
       const handler: NextApiHandler = async (req, res) => {
+        await cors(req, res)
         try {
           const result = await traceAsync(
             tracer,
@@ -55,6 +59,11 @@ export function createEndpoint<T extends ZodType>(
                   req,
                   res,
                 })
+              } catch (error) {
+                if (error instanceof z.ZodError) {
+                  throw new createHttpError.BadRequest(error.message)
+                }
+                throw error
               } finally {
                 if (req.query.trace === '1') {
                   diag._trace = listener.toJSON()

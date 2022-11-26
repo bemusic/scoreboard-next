@@ -77,6 +77,29 @@ export async function getMyRecord(
   }
 }
 
+/**
+ * Return my own records for multiple charts.
+ * @param md5s Chart MD5 hashes.
+ * @param playerId Player ID.
+ */
+export async function getMyRecords(md5s: string[], playerId: string) {
+  const entries = await RankingEntryCollection.find({
+    md5: { $in: md5s },
+    playerId: playerId,
+  }).toArray()
+  const player = await PlayerCollection.findOne({ _id: playerId })
+  if (!player) {
+    throw new Error('Player not found: ' + playerId)
+  }
+  return {
+    data: entries.map((entry) => ({
+      md5: entry.md5,
+      playMode: entry.playMode,
+      entry: serializeRankingEntry(entry, player),
+    })),
+  }
+}
+
 function serializeRankingEntry(entry: RankingEntryDoc, player: PlayerDoc) {
   return {
     id: String(entry._id),
