@@ -33,6 +33,7 @@ export const FirebasePlayerLinkCollection =
 export interface FirebasePlayerLinkDoc {
   _id: string
   firebaseUid: string
+  lastSignedInAt?: string
 }
 
 export function closeDb() {

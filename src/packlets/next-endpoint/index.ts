@@ -59,6 +59,11 @@ export function createEndpoint<T extends ZodType>(
                   req,
                   res,
                 })
+              } catch (error) {
+                if (error instanceof z.ZodError) {
+                  throw new createHttpError.BadRequest(error.message)
+                }
+                throw error
               } finally {
                 if (req.query.trace === '1') {
                   diag._trace = listener.toJSON()

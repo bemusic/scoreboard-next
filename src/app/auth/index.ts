@@ -2,8 +2,12 @@ import { z } from 'zod'
 import axios from 'axios'
 import createHttpError from 'http-errors'
 import { randomUUID } from 'crypto'
-import { decodeJwt } from 'jose'
-import { FirebasePlayerLinkCollection, PlayerCollection, PlayerDoc } from '@/db'
+import {
+  FirebasePlayerLinkCollection,
+  FirebasePlayerLinkDoc,
+  PlayerCollection,
+  PlayerDoc,
+} from '@/db'
 import { handleAxiosError, isAxiosError } from '@/packlets/handle-axios-error'
 import { createLogger } from '@/packlets/logger'
 import { firebaseAdmin } from './firebase-admin'
@@ -24,7 +28,7 @@ export async function authenticatePlayer(username: string, password: string) {
   }
 
   // Resolve username to an email address.
-  const email = await resolveEmailAddress(username)
+  const { email, link: resolvedLink } = await resolveEmailAddress(username)
 
   // Attempt to sign in with Firebase.
   const signInUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`
@@ -38,14 +42,15 @@ export async function authenticatePlayer(username: string, password: string) {
       if (!isAxiosError(e, 400)) {
         throw e
       }
-      const data = e.response?.data as any
-      if (
-        data?.error?.message !== 'EMAIL_NOT_FOUND' &&
-        data?.error?.message !== 'INVALID_PASSWORD'
-      ) {
+      const message = (e.response?.data as any)?.error?.message
+      if (message !== 'EMAIL_NOT_FOUND' && message !== 'INVALID_PASSWORD') {
         throw e
       }
-      throw new createHttpError.Unauthorized('Invalid credentials')
+      throw new createHttpError.Unauthorized(
+        resolvedLink?.lastSignedInAt
+          ? 'Invalid credentials'
+          : 'As of December 2022, we had reset all passwords. To sign in, you must reset your password. To do that, leave the password field blank and click "Log In". If you forgot your username, you can also use your email address as username when logging in.',
+      )
     })
     .catch(handleAxiosError('Unable to authenticate player'))
 
@@ -60,6 +65,12 @@ export async function authenticatePlayer(username: string, password: string) {
     )
   }
 
+  // Save the last signed in time.
+  await FirebasePlayerLinkCollection.updateOne(
+    { _id: link._id },
+    { $set: { lastSignedInAt: new Date().toISOString() } },
+  )
+
   // Find the player.
   const player = await PlayerCollection.findOne({ _id: link._id })
   if (!player) {
@@ -70,16 +81,15 @@ export async function authenticatePlayer(username: string, password: string) {
 
 async function getOrCreateTestUser(username: string, password: string) {
   if (password !== process.env.TEST_USER_PASSWORD) {
-    throw new createHttpError.Unauthorized('Invalid password')
+    throw new createHttpError.Unauthorized('Invalid password for test account')
   }
+  return await upsertPlayer(username)
+}
+
+async function upsertPlayer(playerName: string) {
   const result = await PlayerCollection.findOneAndUpdate(
-    { playerName: username },
-    {
-      $setOnInsert: {
-        _id: randomUUID(),
-        playerName: username,
-      },
-    },
+    { playerName },
+    { $setOnInsert: { _id: randomUUID(), playerName } },
     { upsert: true, returnDocument: 'after' },
   )
   if (!result.value) {
@@ -101,47 +111,62 @@ export async function signUpPlayer(
   if (username.startsWith('test!')) {
     return await getOrCreateTestUser(username, password)
   }
-  throw new Error('UNIMPLEMENTED')
 
   // Ensure that the username is not taken.
   const existingPlayer = await PlayerCollection.findOne({
     playerName: username,
   })
   if (existingPlayer) {
-    throw new createHttpError.Conflict('Username is already taken')
+    // Check if the player is linked to a Firebase user.
+    const link = await FirebasePlayerLinkCollection.findOne({
+      _id: existingPlayer._id,
+    })
+    if (link) {
+      throw new createHttpError.Conflict('Username is already taken')
+    }
   }
 
-  // Generate a random player ID (which is a UUID and will be used as the
-  // username in Auth0).
-  const playerId = randomUUID()
+  // Upsert a player
+  const player = await upsertPlayer(username)
 
-  // Sign up the player in Auth0.
+  // Create a Firebase user
+  const signUpUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`
   const { data } = await axios
-    .post('https://bemuse.au.auth0.com/dbconnections/signup', {
-      client_id: 'XOS0iHs3cwHICkVHwPEJYVHuyyLrETN4',
+    .post(signUpUrl, {
       email,
       password,
-      username: playerId,
-      connection: 'BemuseModern',
-      user_metadata: { playerName: username },
+      returnSecureToken: true,
     })
-    .catch(handleAxiosError('Unable to create a player in Auth0'))
+    .catch((e) => {
+      if (!isAxiosError(e)) {
+        throw e
+      }
+      const message = (e.response?.data as any)?.error?.message
+      if (message !== 'EMAIL_EXISTS') {
+        throw e
+      }
+      throw new createHttpError.Conflict('Email is already in use')
+    })
 
-  // Create a player in the database.
-  const player: PlayerDoc = {
-    _id: playerId,
-    playerName: username,
-    linkedTo: data.user_id,
-  }
-  await PlayerCollection.insertOne(player)
+  // Get the UID.
+  const uid = data.localId
+
+  // Link the Firebase user to the player.
+  await FirebasePlayerLinkCollection.insertOne({
+    _id: player._id,
+    firebaseUid: uid,
+  })
 
   return player
 }
 
-async function resolveEmailAddress(username: string) {
+async function resolveEmailAddress(username: string): Promise<{
+  link?: FirebasePlayerLinkDoc
+  email: string
+}> {
   // If the username is an email address, then it is already usable.
   if (isValidEmail(username)) {
-    return username
+    return { email: username }
   }
 
   // Otherwise, we look up the player ID.
@@ -171,5 +196,29 @@ async function resolveEmailAddress(username: string) {
     firebaseUser.uid,
     firebaseUser.email,
   )
-  return firebaseUser.email
+  return { email: firebaseUser.email, link }
+}
+
+export async function resetPassword(email: string) {
+  if (email.endsWith('@tester.bemuse.ninja')) {
+    return true
+  }
+
+  const resetPasswordUrl = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`
+  await axios
+    .post(resetPasswordUrl, {
+      requestType: 'PASSWORD_RESET',
+      email,
+    })
+    .catch((e) => {
+      if (!isAxiosError(e)) {
+        throw e
+      }
+      const message = (e.response?.data as any)?.error?.message
+      if (message !== 'EMAIL_NOT_FOUND') {
+        throw e
+      }
+      throw new createHttpError.NotFound('Email is not registered')
+    })
+  return true
 }

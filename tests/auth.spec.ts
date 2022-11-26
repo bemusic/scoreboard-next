@@ -62,9 +62,8 @@ test('sign up', async ({ request }) => {
 })
 
 test('reset password', async ({ request }) => {
-  test.skip(true, 'TODO: implement')
   const response = await request.post('/api/auth/reset', {
-    data: { email: 'tester@localhost' },
+    data: { email: 'tester@tester.bemuse.ninja' },
   })
   expect(response.status()).toBe(200)
 })
