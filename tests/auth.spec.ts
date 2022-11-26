@@ -1,6 +1,6 @@
 import { test, expect, APIRequestContext } from '@playwright/test'
 import { randomUUID } from 'crypto'
-import { env } from './helpers'
+import { env, itMustSucceed } from './helpers'
 
 test('login as test user', async ({ request }) => {
   const TEST_USER_PASSWORD = env('TEST_USER_PASSWORD')
@@ -40,6 +40,21 @@ test('login as auth0 user with email', async ({ request }) => {
     AUTH0_TEST_USER_PASSWORD,
   )
   expect(result.playerName).toBe(AUTH0_TEST_USER_USERNAME)
+})
+
+test('sign up', async ({ request }) => {
+  const TEST_USER_PASSWORD = env('TEST_USER_PASSWORD')
+  const result = await request
+    .post('/api/auth/signup', {
+      data: {
+        username: 'test!1',
+        password: TEST_USER_PASSWORD,
+        email: 'test1@tester.bemuse.ninja',
+      },
+    })
+    .then(itMustSucceed())
+  expect(result.playerName).toBe('test!1')
+  expect(result.playerToken).toEqual(expect.any(String))
 })
 
 test('reset password', async ({ request }) => {
