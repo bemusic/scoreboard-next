@@ -13,33 +13,37 @@ test('login as test user with wrong password', async ({ request }) => {
   expect(response.status()).toBe(401)
 })
 
-test('login as auth0 user', async ({ request }) => {
-  const AUTH0_TEST_USER_USERNAME = env('AUTH0_TEST_USER_USERNAME')
-  const AUTH0_TEST_USER_PASSWORD = env('AUTH0_TEST_USER_PASSWORD')
+test('login as existing user', async ({ request }) => {
+  const FIREBASE_TEST_USER_USERNAME = env('FIREBASE_TEST_USER_USERNAME')
+  const FIREBASE_TEST_USER_PASSWORD = env('FIREBASE_TEST_USER_PASSWORD')
   const result = await loginSuccessfully(
     request,
-    AUTH0_TEST_USER_USERNAME,
-    AUTH0_TEST_USER_PASSWORD,
+    FIREBASE_TEST_USER_USERNAME,
+    FIREBASE_TEST_USER_PASSWORD,
   )
-  expect(result.playerName).toBe(AUTH0_TEST_USER_USERNAME)
+  expect(result.playerName).toBe(FIREBASE_TEST_USER_USERNAME)
 })
 
-test('login as auth0 user with wrong password', async ({ request }) => {
-  const AUTH0_TEST_USER_USERNAME = env('AUTH0_TEST_USER_USERNAME')
-  const response = await login(request, AUTH0_TEST_USER_USERNAME, randomUUID())
+test('login as existing user with wrong password', async ({ request }) => {
+  const FIREBASE_TEST_USER_USERNAME = env('FIREBASE_TEST_USER_USERNAME')
+  const response = await login(
+    request,
+    FIREBASE_TEST_USER_USERNAME,
+    randomUUID(),
+  )
   expect(response.status()).toBe(401)
 })
 
-test('login as auth0 user with email', async ({ request }) => {
-  const AUTH0_TEST_USER_EMAIL = env('AUTH0_TEST_USER_EMAIL')
-  const AUTH0_TEST_USER_USERNAME = env('AUTH0_TEST_USER_USERNAME')
-  const AUTH0_TEST_USER_PASSWORD = env('AUTH0_TEST_USER_PASSWORD')
+test('login as existing user with email', async ({ request }) => {
+  const FIREBASE_TEST_USER_EMAIL = env('FIREBASE_TEST_USER_EMAIL')
+  const FIREBASE_TEST_USER_USERNAME = env('FIREBASE_TEST_USER_USERNAME')
+  const FIREBASE_TEST_USER_PASSWORD = env('FIREBASE_TEST_USER_PASSWORD')
   const result = await loginSuccessfully(
     request,
-    AUTH0_TEST_USER_EMAIL,
-    AUTH0_TEST_USER_PASSWORD,
+    FIREBASE_TEST_USER_EMAIL,
+    FIREBASE_TEST_USER_PASSWORD,
   )
-  expect(result.playerName).toBe(AUTH0_TEST_USER_USERNAME)
+  expect(result.playerName).toBe(FIREBASE_TEST_USER_USERNAME)
 })
 
 test('sign up', async ({ request }) => {

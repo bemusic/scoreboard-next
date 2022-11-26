@@ -3,9 +3,10 @@ import axios from 'axios'
 import createHttpError from 'http-errors'
 import { randomUUID } from 'crypto'
 import { decodeJwt } from 'jose'
-import { PlayerCollection, PlayerDoc } from '@/db'
+import { FirebasePlayerLinkCollection, PlayerCollection, PlayerDoc } from '@/db'
 import { handleAxiosError, isAxiosError } from '@/packlets/handle-axios-error'
 import { createLogger } from '@/packlets/logger'
+import { firebaseAdmin } from './firebase-admin'
 
 const logger = createLogger('auth')
 
@@ -14,50 +15,55 @@ export const Email = z.string().email()
 export const UsernameOrEmail = z.union([Username, Email])
 export const Password = z.string().min(6)
 
+const apiKey = global.process.env.FIREBASE_API_KEY
+
 export async function authenticatePlayer(username: string, password: string) {
   // For test accounts, use a hardcoded password.
   if (username.startsWith('test!')) {
     return await getOrCreateTestUser(username, password)
   }
 
-  // Auth0 has a username validation logic that is not compatible with Bemuse,
-  // so instead of storing the username in Auth0, we store arbitrarily generated
-  // UUIDs in the username field.
-  const auth0Username = await resolveAuth0Username(username)
+  // Resolve username to an email address.
+  const email = await resolveEmailAddress(username)
+
+  // Attempt to sign in with Firebase.
+  const signInUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`
   const { data } = await axios
-    .post(
-      'https://bemuse.au.auth0.com/oauth/token',
-      new URLSearchParams({
-        grant_type: 'http://auth0.com/oauth/grant-type/password-realm',
-        realm: 'Username-Password-Authentication',
-        username: auth0Username,
-        password,
-        client_id: 'XOS0iHs3cwHICkVHwPEJYVHuyyLrETN4',
-        scope: 'openid',
-      }).toString(),
-    )
+    .post(signInUrl, {
+      email,
+      password,
+      returnSecureToken: true,
+    })
     .catch((e) => {
-      if (!isAxiosError(e, 403)) {
+      if (!isAxiosError(e, 400)) {
+        throw e
+      }
+      const data = e.response?.data as any
+      if (
+        data?.error?.message !== 'EMAIL_NOT_FOUND' &&
+        data?.error?.message !== 'INVALID_PASSWORD'
+      ) {
         throw e
       }
       throw new createHttpError.Unauthorized('Invalid credentials')
     })
     .catch(handleAxiosError('Unable to authenticate player'))
 
-  // Since the ID token is directly returned by Auth0 (as supposed to being
-  // sent to the client and then sent back to the server), we can trust it.
-  // As an optimization, we can skip verifying the signature and just decode
-  // the payload.
-  const payload = decodeJwt(data.id_token)
+  // Get the UID.
+  const uid = data.localId
 
-  // Look up a player corresponding to the Auth0 user.
-  const player = await PlayerCollection.findOne({
-    linkedTo: payload.sub,
-  })
-  if (!player) {
+  // Look up a player corresponding to the Firebase user.
+  const link = await FirebasePlayerLinkCollection.findOne({ firebaseUid: uid })
+  if (!link) {
     throw new createHttpError.Unauthorized(
-      `Your account has been deactivated due to inactivity.`,
+      'No player is linked to this account',
     )
+  }
+
+  // Find the player.
+  const player = await PlayerCollection.findOne({ _id: link._id })
+  if (!player) {
+    throw new createHttpError.Unauthorized(`Linked player not found.`)
   }
   return player
 }
@@ -95,6 +101,7 @@ export async function signUpPlayer(
   if (username.startsWith('test!')) {
     return await getOrCreateTestUser(username, password)
   }
+  throw new Error('UNIMPLEMENTED')
 
   // Ensure that the username is not taken.
   const existingPlayer = await PlayerCollection.findOne({
@@ -109,17 +116,16 @@ export async function signUpPlayer(
   const playerId = randomUUID()
 
   // Sign up the player in Auth0.
-  const { data } = await axios.post(
-    'https://bemuse.au.auth0.com/dbconnections/signup',
-    new URLSearchParams({
+  const { data } = await axios
+    .post('https://bemuse.au.auth0.com/dbconnections/signup', {
       client_id: 'XOS0iHs3cwHICkVHwPEJYVHuyyLrETN4',
       email,
       password,
       username: playerId,
-      connection: 'Username-Password-Authentication',
-      user_metadata: JSON.stringify({ playerName: username }),
-    }),
-  )
+      connection: 'BemuseModern',
+      user_metadata: { playerName: username },
+    })
+    .catch(handleAxiosError('Unable to create a player in Auth0'))
 
   // Create a player in the database.
   const player: PlayerDoc = {
@@ -132,20 +138,38 @@ export async function signUpPlayer(
   return player
 }
 
-async function resolveAuth0Username(username: string) {
+async function resolveEmailAddress(username: string) {
   // If the username is an email address, then it is already usable.
-  if (isValidEmail('@')) {
+  if (isValidEmail(username)) {
     return username
   }
 
-  // Otherwise, we store player ID (which is a UUID) in the username field.
-  const player = await PlayerCollection.findOne({
-    playerName: username,
-  })
+  // Otherwise, we look up the player ID.
+  const player = await PlayerCollection.findOne({ playerName: username })
   if (!player) {
     throw new createHttpError.Unauthorized(`Player "${username}" is not found`)
   }
 
-  logger.info('Resolved player "%s" => "%s"', username, player._id)
-  return player._id
+  // Then find the associated Firebase user ID.
+  const link = await FirebasePlayerLinkCollection.findOne({ _id: player._id })
+  if (!link) {
+    throw new createHttpError.Unauthorized(`Player "${username}" is unlinked`)
+  }
+
+  // Use the Admin SDK to look up the email address.
+  const firebaseUser = await firebaseAdmin.auth().getUser(link.firebaseUid)
+  if (!firebaseUser.email) {
+    throw new createHttpError.Unauthorized(
+      `Player "${username}" is not associated with an email address`,
+    )
+  }
+
+  // Return the email address.
+  logger.info(
+    'Resolved player "%s" => "%s" => "%s"',
+    username,
+    firebaseUser.uid,
+    firebaseUser.email,
+  )
+  return firebaseUser.email
 }

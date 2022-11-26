@@ -1,4 +1,4 @@
-import { db } from './db'
+import { client, db } from './db'
 
 export const PlayerCollection = db.collection<PlayerDoc>('Player')
 export interface PlayerDoc {
@@ -26,4 +26,15 @@ export interface RankingEntryData {
   recordedAt: Date
   score: number
   total: number
+}
+
+export const FirebasePlayerLinkCollection =
+  db.collection<FirebasePlayerLinkDoc>('FirebasePlayerLink')
+export interface FirebasePlayerLinkDoc {
+  _id: string
+  firebaseUid: string
+}
+
+export function closeDb() {
+  client.close()
 }

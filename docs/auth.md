@@ -64,3 +64,83 @@ Response
   "user_metadata": { "playerName": "BemuseTester3" }
 }
 ```
+
+### Original legacy database scripts
+
+### Login script
+
+```js
+function login(email, password, callback) {
+  request(
+    {
+      url: configuration.server + '/legacyusers/check',
+      method: 'POST',
+      form: {
+        playerIdOrEmail: email,
+        password: password,
+        apiKey: configuration.apiKey,
+      },
+      json: true,
+    },
+    function (error, response, body) {
+      if (error) return callback(error)
+      if (response.statusCode === 401)
+        return callback(
+          new WrongUsernameOrPasswordError(email, 'Invalid credentials'),
+        )
+      if (response.statusCode !== 200)
+        return callback(
+          new Error('Internal error: Unexpected status ' + response.statusCode),
+        )
+      if (!body.username && !body.email)
+        return callback(
+          new Error('Internal error: Does not contain user profile'),
+        )
+      return callback(null, {
+        username: body.username,
+        email: body.email,
+        email_verified: body.emailVerified,
+        created_at: body.createdAt,
+        parse_id: body._id,
+      })
+    },
+  )
+}
+```
+
+### Get user script
+
+```js
+function getByEmail(email, callback) {
+  request(
+    {
+      url: configuration.server + '/legacyusers/get',
+      method: 'POST',
+      form: {
+        playerIdOrEmail: email,
+        apiKey: configuration.apiKey,
+      },
+      json: true,
+    },
+    function (error, response, body) {
+      if (error) return callback(error)
+      if (response.statusCode === 404) return callback(null)
+      if (response.statusCode !== 200)
+        return callback(
+          new Error('Internal error: Unexpected status ' + response.statusCode),
+        )
+      if (!body.username && !body.email)
+        return callback(
+          new Error('Internal error: Does not contain user profile'),
+        )
+      return callback(null, {
+        username: body.username,
+        email: body.email,
+        email_verified: body.emailVerified,
+        created_at: body.createdAt,
+        parse_id: body._id,
+      })
+    },
+  )
+}
+```
