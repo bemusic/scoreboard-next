@@ -9,14 +9,8 @@ import { createLogger } from '@/packlets/logger'
 
 const logger = createLogger('auth')
 
-export const Username = z
-  .string()
-  .min(1)
-  .max(32)
-  .regex(/^(?:test!)?[a-zA-Z0-9_]+$/)
-
+export const Username = z.string().min(1).max(32).regex(/^\S+$/)
 export const UsernameOrEmail = z.union([Username, z.string().email()])
-
 export const Password = z.string().min(6)
 
 export async function authenticatePlayer(username: string, password: string) {
