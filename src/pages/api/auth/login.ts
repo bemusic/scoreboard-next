@@ -1,11 +1,11 @@
 import { createEndpoint } from '@/packlets/next-endpoint'
 import { generatePlayerToken } from '@/app/player-token'
-import { authenticatePlayer, Password, Username } from '@/app/auth'
+import { authenticatePlayer, Password, UsernameOrEmail } from '@/app/auth'
 import { z } from 'zod'
 
 export default createEndpoint({
   input: z.object({
-    username: Username,
+    username: UsernameOrEmail,
     password: Password,
   }),
 }).handler(async ({ input }) => {
