@@ -222,3 +222,8 @@ export async function resetPassword(email: string) {
     })
   return true
 }
+
+export async function getPlayerById(playerId: string) {
+  const player = await PlayerCollection.findOne({ _id: playerId })
+  return player
+}

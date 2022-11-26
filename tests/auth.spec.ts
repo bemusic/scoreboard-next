@@ -68,19 +68,32 @@ test('reset password', async ({ request }) => {
   expect(response.status()).toBe(200)
 })
 
+test('reset password with invalid email', async ({ request }) => {
+  const response = await request.post('/api/auth/reset', {
+    data: { email: 'bogus' },
+  })
+  expect(response.status()).toBe(400)
+})
+
 test('renewing token', async ({ request }) => {
   const TEST_USER_PASSWORD = env('TEST_USER_PASSWORD')
   const result = await loginSuccessfully(request, 'test!1', TEST_USER_PASSWORD)
   const token1 = result.playerToken
-  test.skip(true, 'TODO: implement')
   const response = await request.post('/api/auth/renew', {
     headers: { Authorization: `Bearer ${token1}` },
   })
   expect(response.status()).toBe(200)
   const result2 = await response.json()
   const token2 = result2.playerToken
-  expect(token2).toBe(expect.any(String))
+  expect(token2).toEqual(expect.any(String))
   expect(token1).not.toBe(token2)
+})
+
+test('renewing token with invalid token', async ({ request }) => {
+  const response = await request.post('/api/auth/renew', {
+    headers: { Authorization: `Bearer BOGUS` },
+  })
+  expect(response.status()).toBe(401)
 })
 
 async function loginSuccessfully(
