@@ -7,27 +7,50 @@ const { miniTracer } = require('./api')
 const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http')
 const { NetInstrumentation } = require('@opentelemetry/instrumentation-net')
 const { PinoInstrumentation } = require('@opentelemetry/instrumentation-pino')
+const { HoneycombSDK } = require('@honeycombio/opentelemetry-node')
 const {
   MongoDBInstrumentation,
 } = require('@opentelemetry/instrumentation-mongodb')
 
-// For troubleshooting, set the log level to DiagLogLevel.DEBUG
-opentelemetry.api.diag.setLogger(
-  new opentelemetry.api.DiagConsoleLogger(),
-  opentelemetry.api.DiagLogLevel.INFO,
-)
+function getSdk() {
+  if (process.env.HONEYCOMB_API_KEY) {
+    console.log(
+      'Note: Using Honeycomb SDK with dataset "%s" and service name "%s"',
+      process.env.HONEYCOMB_DATASET,
+      process.env.OTEL_SERVICE_NAME,
+    )
+    return new HoneycombSDK({
+      instrumentations: getInstrumentations(),
+      debug: true,
+    })
+  } else {
+    console.warn('Note: Honeycomb API key not found, just sending to OTLP')
+    // For troubleshooting, set the log level to DiagLogLevel.DEBUG
+    opentelemetry.api.diag.setLogger(
+      new opentelemetry.api.DiagConsoleLogger(),
+      opentelemetry.api.DiagLogLevel.INFO,
+    )
+    const exporter = new OTLPTraceExporter({
+      url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    })
+    const baseSpanProcessor = new opentelemetry.tracing.BatchSpanProcessor(
+      exporter,
+    )
+    return new opentelemetry.NodeSDK({
+      spanProcessor: miniTracer.createSpanProcessor(baseSpanProcessor),
+      instrumentations: getInstrumentations(),
+    })
+  }
+}
 
-const exporter = new OTLPTraceExporter({ url: 'http://db:4318/v1/traces' })
-const baseSpanProcessor = new opentelemetry.tracing.BatchSpanProcessor(exporter)
-
-const sdk = new opentelemetry.NodeSDK({
-  spanProcessor: miniTracer.createSpanProcessor(baseSpanProcessor),
-  instrumentations: [
+function getInstrumentations() {
+  return [
     new HttpInstrumentation(),
     new NetInstrumentation(),
     new PinoInstrumentation(),
     new MongoDBInstrumentation(),
-  ],
-})
+  ]
+}
 
+const sdk = getSdk()
 sdk.start()
