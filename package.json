@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "env NODE_OPTIONS='--require @bemuse/otel' next dev -p ${PORT:-8009}",
-    "build": "next build && mkdir -p .next/standalone/node_internals/@bemuse && rm -rfv .next/standalone/node_internals/@bemuse/otel && cp -Rv packages/otel/ .next/standalone/node_internals/@bemuse/otel",
+    "build": "next build && mkdir -p .next/standalone/node_modules/@bemuse && rm -rfv .next/standalone/node_modules/@bemuse/otel && cp -Rv packages/otel/ .next/standalone/node_modules/@bemuse/otel",
     "start": "next start -p ${PORT:-8009}",
     "lint": "next lint"
   },
