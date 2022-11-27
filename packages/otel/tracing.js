@@ -4,7 +4,7 @@ const {
   getNodeAutoInstrumentations,
 } = require('@opentelemetry/auto-instrumentations-node')
 const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http')
-const { miniTracer } = require('./src/packlets/tracing')
+const { miniTracer } = require('./api')
 
 // For troubleshooting, set the log level to DiagLogLevel.DEBUG
 opentelemetry.api.diag.setLogger(
