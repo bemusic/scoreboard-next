@@ -10,6 +10,8 @@ const tracer = otel.trace.getTracer('next-endpoint')
 const logger = createLogger('next-endpoint')
 const cors = initMiddleware(Cors())
 
+require.resolve('@bemuse/otel/tracing')
+
 /**
  * Trace an async function
  */

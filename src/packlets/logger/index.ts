@@ -1,6 +1,9 @@
 import pino from 'pino'
 import pretty from 'pino-pretty'
 
+// Do this to satisfy Output File Tracing...
+require.resolve('pino/package.json')
+
 const rootLogger = pino(
   {
     serializers: {
