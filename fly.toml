@@ -7,6 +7,8 @@ processes = []
 
 [env]
   PORT = "8080"
+  HONEYCOMB_DATASET = "bemuse"
+  OTEL_SERVICE_NAME = "scoreboard"
 
 [experimental]
   allowed_public_ports = []
