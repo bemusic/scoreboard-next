@@ -1,6 +1,10 @@
 import pino from 'pino'
 import pretty from 'pino-pretty'
 
+// Include pino package.json in build output for OpenTelemetry SDK
+// to be able to detect its version.
+require.resolve('pino/package.json')
+
 const rootLogger = pino(
   {
     serializers: {

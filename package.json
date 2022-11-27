@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "env NODE_OPTIONS='--require @bemuse/otel' next dev -p ${PORT:-8009}",
-    "build": "next build",
+    "build": "next build && ./scripts/postbuild.sh",
     "start": "next start -p ${PORT:-8009}",
     "lint": "next lint"
   },

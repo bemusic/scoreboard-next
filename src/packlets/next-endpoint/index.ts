@@ -10,6 +10,10 @@ const tracer = otel.trace.getTracer('next-endpoint')
 const logger = createLogger('next-endpoint')
 const cors = initMiddleware(Cors())
 
+// Include the registration script in the build output to allow invoking
+// node with `-r @bemuse/otel/register` to register the OpenTelemetry SDK.
+require.resolve('@bemuse/otel/register')
+
 /**
  * Trace an async function
  */
